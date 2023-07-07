@@ -109,23 +109,18 @@ function processNode(node){
 }
 
 function dumpTranslations(){
-    if(!hasLocalization()) {
-        // If we don't have any localization,
-        // we will not have traversed the app to find
-        // original_lines, so do that now.
-        processNode(gradioApp());
-    }
     var dumped = {}
     if (localization.rtl) {
-        dumped.rtl = true;
+        dumped.rtl = true
     }
 
-    for (const text in original_lines) {
-        if(dumped[text] !== undefined) continue;
-        dumped[text] = localization[text] || text;
-    }
+    Object.keys(original_lines).forEach(function(text){
+        if(dumped[text] !== undefined)  return
 
-    return dumped;
+        dumped[text] = localization[text] || text
+    })
+
+    return dumped
 }
 
 function download_localization() {
@@ -142,11 +137,7 @@ function download_localization() {
     document.body.removeChild(element);
 }
 
-document.addEventListener("DOMContentLoaded", function () {
-    if (!hasLocalization()) {
-        return;
-    }
-
+if(hasLocalization()) {
     onUiUpdate(function (m) {
         m.forEach(function (mutation) {
             mutation.addedNodes.forEach(function (node) {
@@ -155,23 +146,26 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     })
 
-    processNode(gradioApp())
 
-    if (localization.rtl) {  // if the language is from right to left,
-        (new MutationObserver((mutations, observer) => { // wait for the style to load
-            mutations.forEach(mutation => {
-                mutation.addedNodes.forEach(node => {
-                    if (node.tagName === 'STYLE') {
-                        observer.disconnect();
+    document.addEventListener("DOMContentLoaded", function () {
+        processNode(gradioApp())
 
-                        for (const x of node.sheet.rules) {  // find all rtl media rules
-                            if (Array.from(x.media || []).includes('rtl')) {
-                                x.media.appendMedium('all');  // enable them
+        if (localization.rtl) {  // if the language is from right to left,
+            (new MutationObserver((mutations, observer) => { // wait for the style to load
+                mutations.forEach(mutation => {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.tagName === 'STYLE') {
+                            observer.disconnect();
+
+                            for (const x of node.sheet.rules) {  // find all rtl media rules
+                                if (Array.from(x.media || []).includes('rtl')) {
+                                    x.media.appendMedium('all');  // enable them
+                                }
                             }
                         }
-                    }
-                })
-            });
-        })).observe(gradioApp(), { childList: true });
-    }
-})
+                    })
+                });
+            })).observe(gradioApp(), { childList: true });
+        }
+    })
+}
